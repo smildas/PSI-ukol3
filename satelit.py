@@ -22,21 +22,12 @@ def getSatelitData():
 
 
 def getTimeLocationData(latitude, longitude):
-    url_time = 'https://api.sunrise-sunset.org/json?lat=' + latitude + '&lng=' + longitude
+    url_time = 'https://api.sunrise-sunset.org/json?lat=' + latitude + '&lng=' + longitude + '&formatted=0'
     time_res = requests.get(url=url_time);
     time_data = json.loads(time_res.text, object_hook=customTimeDecoder)
     return time_data
 
 
-def setCurrentDate(time, currentTime):
-    return datetime(time.year, time.month, time.day, currentTime.hour, currentTime.minute, currentTime.second)
-
-
-#Pokud je dřív východ než západ, tak přičti den k časové hodnotě západu slunce
-def setSunset(sunset, sunrise):
-    if sunset.time() < sunrise.time():
-        sunset = sunset + timedelta(days=1)
-    return sunset
 
 
 satelit_data = getSatelitData()
@@ -46,17 +37,17 @@ print("Souřadnice satelitu: Zeměpisná šířka %f; Zeměpisná délka %f " % 
 time_data = getTimeLocationData(satelit_data.iss_position.latitude, satelit_data.iss_position.longitude)
 
 #získání hodnoty východu a západu slunce z dat získaných z rest serveru
-sunrise_datetime = datetime.strptime(time_data.results.sunrise, '%I:%M:%S %p')
-sunset_datetime = datetime.strptime(time_data.results.sunset, '%I:%M:%S %p')
+sunrise_datetime =  datetime.fromisoformat(time_data.results.sunrise)
+valid_sunrise = datetime(sunrise_datetime.year, sunrise_datetime.month, sunrise_datetime.day, sunrise_datetime.hour, sunrise_datetime.minute, sunrise_datetime.second)
+
+sunset_datetime = datetime.fromisoformat(time_data.results.sunset)
+valid_sunset = datetime(sunset_datetime.year, sunset_datetime.month, sunset_datetime.day, sunset_datetime.hour, sunset_datetime.minute, sunset_datetime.second)
 
 #získání času z údajů satelit v UTC+0
 formated_time = datetime.fromtimestamp(satelit_data.timestamp, pytz.UTC)
 current_time = datetime(formated_time.year, formated_time.month, formated_time.day, formated_time.hour,
                         formated_time.minute, formated_time.second)
 
-valid_sunrise = setCurrentDate(current_time, sunrise_datetime)
-valid_sunset = setCurrentDate(current_time, sunset_datetime)
-valid_sunset = setSunset(valid_sunset, valid_sunrise)
 
 noc = False
 
